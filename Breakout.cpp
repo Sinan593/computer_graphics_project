@@ -471,7 +471,7 @@ void Breakout::drawGameStats(void)
     glEnd();
 
     float offset = 25.0f;
-    for (int i = 0; i < lifesCount & i < 10; ++i)
+    for (int i = 0; i < lifesCount && i < 10; ++i)
     {
         drawLife(35 + offset * i, 15);
     }
