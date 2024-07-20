@@ -1,0 +1,1 @@
+/usr/bin/c++ -g -Wall CMakeFiles/ogamalBreakout.dir/Breakout.cpp.o CMakeFiles/ogamalBreakout.dir/MainMenu.cpp.o CMakeFiles/ogamalBreakout.dir/main.cpp.o -o ogamalBreakout  /usr/lib/x86_64-linux-gnu/libGL.so /usr/lib/x86_64-linux-gnu/libGLU.so /usr/lib/x86_64-linux-gnu/libglut.so /usr/lib/x86_64-linux-gnu/libXi.so -lSDL2 -lSDL2_mixer -lSDL2 -lSDL2_mixer 
