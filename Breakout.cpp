@@ -626,3 +626,5 @@ void Breakout::specialKeyPos(int key, int x, int y)
         break;
     }
 }
+
+// need to fix few bugs and optimize the game
