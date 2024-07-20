@@ -1,123 +1,181 @@
 #include "Breakout.h"
 
-using namespace std;
-
-void recomputeFrame(int value);
-
 Breakout::Breakout()
 {
-        SDL_Init(SDL_INIT_AUDIO);
-        Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
-        backgroundMusic = Mix_LoadMUS("path/to/your/music.mp3");
-        Mix_PlayMusic(backgroundMusic, -1);
-        gameState = START_PAGE;
-    
-}
-
-Breakout::~Breakout()
-{
+    gameState = START_PAGE;
     init();
 }
 
-void Breakout::display(void)
+void Breakout::init()
 {
+    score = 0;
+    lives = 3;
+    level = 1;
 
-    // Clear buffer
+    initBricks();
+    paddle.width = PADDLE_INITIAL_WIDTH;
+    paddle.x = (WINDOW_WIDTH - paddle.width) / 2;
+    paddle.y = WINDOW_HEIGHT - 30;
+
+    balls.clear();
+    launchBall();
+}
+
+void Breakout::display()
+{
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // Set OpenGL for 2D drawing
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glDisable(GL_LIGHTING);
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_TEXTURE_2D);
-    glOrtho(0.0f, WINWIDTH, WINHEIGHT, 0.0f, 0.0f, 1.0f);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
-    // Draw my cool gradient background
-    drawBackground();
-
-    // Select which state of the game to display
     switch (gameState)
     {
-    case INIT:
-        // Init values
-        init();
+    case START_PAGE:
+        drawStartPage();
         break;
-
-    case Menus:
-        // TODO List menu
+    case GAMEPLAY:
+        drawGameplay();
+        updateGame();
         break;
-
-    case Gameplay:
-        // Draw the game
-        drawGame();
-        // If no balls, player loses the game
-        if (balls.size() <= 0 && lifesCount > 0)
-        {
-            newBall(-1, -1);
-            lifesCount--;
-            reward = 100;
-        }
-        else if (balls.size() <= 0)
-        {
-            // TODO - GAME OVER
-        }
-
-        // If no bricks, player wins the level
-        if (bricks.size() <= 0 && level <= 2)
-        {
-            level++;
-            initBricks();
-        }
-        else if (bricks.size() <= 0)
-        {
-            // TODO - PLAYER WON
-        }
-        break;
-
-    case Scoreboard:
-        // TODO
-        break;
-
-    default:
+    case SCORE_PAGE:
+        drawScorePage();
         break;
     }
-
-    glutTimerFunc(TIMER, recomputeFrame, 0);
 
     glutSwapBuffers();
 }
 
-void recomputeFrame(int value)
+void Breakout::drawGameplay()
 {
-    glutPostRedisplay();
+    // Draw bricks
+    for (const auto &brick : bricks)
+    {
+        glColor3f(brick.r, brick.g, brick.b);
+        glRectf(brick.x, brick.y, brick.x + brick.width, brick.y + brick.height);
+    }
+
+    // Draw paddle
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glRectf(paddle.x, paddle.y, paddle.x + paddle.width, paddle.y + PADDLE_HEIGHT);
+
+    // Draw balls
+    for (const auto &ball : balls)
+    {
+        glColor3f(1.0f, 1.0f, 1.0f);
+        drawCircle(ball.x, ball.y, BALL_RADIUS);
+    }
+
+    // Draw score and lives
+    drawText(10, WINDOW_HEIGHT - 20, "Score: " + std::to_string(score));
+    drawText(WINDOW_WIDTH - 100, WINDOW_HEIGHT - 20, "Lives: " + std::to_string(lives));
 }
 
-void Breakout::init(void)
+void Breakout::updateGame()
 {
-    // Reset game statistics
-    score = 0;
-    level = 1;
-    reward = 100;
-    lifesCount = 3;
+    handleCollisions();
 
-    // Remove all balls
-    balls.clear();
+    for (auto &ball : balls)
+    {
+        ball.x += ball.dx;
+        ball.y += ball.dy;
 
-    // Remove all bricks
-    bricks.clear();
+        if (ball.x <= BALL_RADIUS || ball.x >= WINDOW_WIDTH - BALL_RADIUS)
+            ball.dx = -ball.dx;
+        if (ball.y <= BALL_RADIUS)
+            ball.dy = -ball.dy;
 
-    // Init bricks
-    initBricks();
+        if (ball.y >= WINDOW_HEIGHT + BALL_RADIUS)
+        {
+            balls.erase(balls.begin());
+            if (balls.empty())
+            {
+                lives--;
+                if (lives > 0)
+                    launchBall();
+                else
+                    gameState = SCORE_PAGE;
+            }
+        }
+    }
 
-    // Add ball and paddle
-    initPaddle();
-    newBall(-1, -1);
+    if (bricks.empty())
+    {
+        level++;
+        initBricks();
+    }
+}
 
-    // Start game play
-    gameState = Breakout::Gameplay;
+void Breakout::launchBall()
+{
+    Ball newBall;
+    newBall.x = paddle.x + paddle.width / 2;
+    newBall.y = paddle.y - BALL_RADIUS;
+    newBall.dx = 2.0f * (((float)rand() / RAND_MAX) - 0.5f);
+    newBall.dy = -3.0f;
+    balls.push_back(newBall);
+}
+
+void Breakout::keyStroke(unsigned char key, int x, int y)
+{
+    switch (key)
+    {
+    case 'a':
+    case 'A':
+        paddle.x -= 10;
+        if (paddle.x < 0)
+            paddle.x = 0;
+        break;
+    case 'd':
+    case 'D':
+        paddle.x += 10;
+        if (paddle.x + paddle.width > WINDOW_WIDTH)
+            paddle.x = WINDOW_WIDTH - paddle.width;
+        break;
+    case ' ':
+        if (gameState == START_PAGE)
+            gameState = GAMEPLAY;
+        else if (gameState == SCORE_PAGE)
+            init();
+        break;
+    case 27: // ESC key
+        exit(0);
+        break;
+    }
+
+    if (bricks.empty()) {
+        level++;
+        initBricks();
+    }
+}
+
+void Breakout::launchBall() {
+    Ball newBall;
+    newBall.x = paddle.x + paddle.width / 2;
+    newBall.y = paddle.y - BALL_RADIUS;
+    newBall.dx = 2.0f * (((float)rand() / RAND_MAX) - 0.5f);
+    newBall.dy = -3.0f;
+    balls.push_back(newBall);
+}
+
+void Breakout::keyStroke(unsigned char key, int x, int y) {
+    switch (key) {
+        case 'a':
+        case 'A':
+            paddle.x -= 10;
+            if (paddle.x < 0) paddle.x = 0;
+            break;
+        case 'd':
+        case 'D':
+            paddle.x += 10;
+            if (paddle.x + paddle.width > WINDOW_WIDTH) paddle.x = WINDOW_WIDTH - paddle.width;
+            break;
+        case ' ':
+            if (gameState == START_PAGE)
+                gameState = GAMEPLAY;
+            else if (gameState == SCORE_PAGE)
+                init();
+            break;
+        case 27: // ESC key
+            exit(0);
+            break;
+    }
 }
 
 void Breakout::drawBackground(void)

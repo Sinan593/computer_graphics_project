@@ -23,29 +23,44 @@ extern int WINNHEIGHT;
 #include "MyObjects.h"      // Game-specific objects
 #include "config.h"         // Game configurations
 
-class Breakout {
-
+class Breakout
+{
 public:
-    // Class Constructor/Destructor
     Breakout();
     ~Breakout();
-    
-    // Public functions (handle GLUT calls)
+
     void display(void);
     void init(void);
     void reshape(int width, int height);
-    void mouseClick(int button, int state, int x, int y);
-    void mouseMove(int x, int y);
     void keyStroke(unsigned char key, int x, int y);
-    void specialKeyPos(int key, int x, int y);
-    
+    void specialKeyStroke(int key, int x, int y);
+
 private:
-    // Game statistics
+    enum GameState
+    {
+        START_PAGE,
+        GAMEPLAY,
+        SCORE_PAGE
+    };
+    GameState gameState;
+
     int score;
+    int lives;
     int level;
-    int reward;
-    int lifesCount;
-    
+
+    std::vector<Ball> balls;
+    Paddle paddle;
+    std::vector<Brick> bricks;
+
+    void drawStartPage(void);
+    void drawGameplay(void);
+    void drawScorePage(void);
+    void initBricks(void);
+    void updateGame(void);
+    void launchBall(void);
+    void handleCollisions(void);
+    void applyPowerUp(PowerUpType type);
+
     // Possible game mode
     enum State {INIT, START_PAGE, Menus, Gameplay, Scoreboard};
     Breakout::State gameState;

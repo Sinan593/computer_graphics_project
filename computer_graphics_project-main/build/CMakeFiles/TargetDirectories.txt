@@ -1,3 +1,0 @@
-/home/sinan/Downloads/computer_graphics_project-master/build/CMakeFiles/ogamalBreakout.dir
-/home/sinan/Downloads/computer_graphics_project-master/build/CMakeFiles/edit_cache.dir
-/home/sinan/Downloads/computer_graphics_project-master/build/CMakeFiles/rebuild_cache.dir
